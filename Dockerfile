@@ -2,15 +2,15 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y build-essential
+# Install system dependencies and uv
+RUN apt-get update && apt-get install -y build-essential \
+    && pip install --no-cache-dir uv
 
-# Copy requirements
-COPY requirements/ /app/requirements/
+# Copy dependency files
+COPY pyproject.toml uv.lock /app/
 
-
-RUN pip install --no-cache-dir -r requirements/requirements.txt
-
+# Install dependencies
+RUN uv sync --frozen --no-dev
 
 # Copy project
 COPY . .
@@ -18,6 +18,4 @@ COPY . .
 # Expose API port
 EXPOSE 8000
 
-
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
-
+CMD ["uv", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

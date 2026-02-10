@@ -14,9 +14,6 @@ FastAPI SaaS kit/
 |   |-- script.py.mako
 |   `-- versions/
 |-- logs/
-|-- requirements/
-|   |-- devlopment.txt
-|   `-- requirements.txt
 |-- src/
 |   |-- auth/
 |   |   |-- dependencies.py
@@ -61,9 +58,10 @@ FastAPI SaaS kit/
 |-- docker-compose.yml
 |-- Dockerfile
 |-- alembic.ini
+|-- pyproject.toml
+|-- uv.lock
 |-- docs.md
 |-- features.md
-|-- pytest.ini
 `-- README.md
 ```
 
@@ -94,9 +92,11 @@ FastAPI SaaS kit/
 - Redis broker; Celery worker and beat
 - FastAPI-Mail (SMTP + Jinja templates)
 - slowapi for rate limiting; loguru for logging
+- [uv](https://docs.astral.sh/uv/) for dependency management
 
 ## Requirements
 - Python 3.12+
+- [uv](https://docs.astral.sh/uv/) package manager
 - PostgreSQL (DATABASE_URL) and a sync URL for Celery (SYNC_DATABASE_URL)
 - Redis 7+ for rate limiting and Celery broker
 - Stripe keys (public, secret, webhook signing)
@@ -105,22 +105,19 @@ FastAPI SaaS kit/
 - Optional: Docker and docker-compose for local orchestration
 
 ## Installation
-1. Create and activate a virtualenv:
+1. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) if you haven't already:
    ```bash
-   python -m venv .venv
-   .\.venv\Scripts\activate  # on Windows
-   # source .venv/bin/activate on Linux/macOS
+   curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
-2. Install dependencies:
+2. Install dependencies (this also creates a virtualenv automatically):
    ```bash
-   pip install -r requirements/requirements.txt
+   uv sync
    ```
-   (For dev-only pins you can also use `requirements/devlopment.txt`.)
 3. Copy `.env.example` to `.env` and fill in all values (see Environment Variables below).
 4. Create the PostgreSQL databases referenced by `DATABASE_URL`, `SYNC_DATABASE_URL`, and `TEST_DATABASE_URL`.
 5. Run migrations:
    ```bash
-   alembic upgrade head
+   uv run alembic upgrade head
    ```
 
 ## Environment Variables
@@ -138,12 +135,12 @@ Key settings loaded via `src/config.py`:
 1. Ensure PostgreSQL and Redis are running.
 2. Start the API:
    ```bash
-   uvicorn src.main:app --reload
+   uv run uvicorn src.main:app --reload
    ```
 3. Start Celery worker and beat (separate shells):
    ```bash
-   celery -A src.celery_app.celery_app worker --loglevel=info
-   celery -A src.celery_app.beat_app beat --loglevel=info
+   uv run celery -A src.celery_app.celery_app worker --loglevel=info
+   uv run celery -A src.celery_app.beat_app beat --loglevel=info
    ```
 4. Configure your SMTP sandbox so email flows (verification/reset/OTP/subscription) can send.
 
@@ -162,7 +159,7 @@ Key settings loaded via `src/config.py`:
 - Set `TEST_DATABASE_URL` to a dedicated database.
 - Run all tests with:
   ```bash
-  pytest
+  uv run pytest
   ```
   Tests spin up schema automatically, disable the rate limiter, and use httpx ASGI client fixtures. Mock Stripe/email in new tests to avoid real calls.
 
@@ -172,8 +169,8 @@ Key settings loaded via `src/config.py`:
 
 ## Contribution Guidelines
 - Fork/branch, keep PRs focused, and update docs when behaviors change.
-- Add/adjust tests (pytest) for any new logic; mock external providers.
-- Run `alembic upgrade head` and `pytest` before pushing.
+- Add/adjust tests (`uv run pytest`) for any new logic; mock external providers.
+- Run `uv run alembic upgrade head` and `uv run pytest` before pushing.
 - Use clear commit messages and reference relevant modules/paths.
 
 ## License
